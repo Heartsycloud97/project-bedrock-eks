@@ -1,0 +1,17 @@
+replicaCount: 1
+image:
+  repository: amazon/retail-store-sample-app
+  tag: latest
+
+# Use in-cluster dependencies (default)
+database:
+  type: in-cluster
+  mysql:
+    enabled: true
+  postgres:
+    enabled: true
+messageBroker:
+  rabbitmq:
+    enabled: true
+  redis:
+    enabled: true

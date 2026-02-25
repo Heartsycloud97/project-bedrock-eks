@@ -1,0 +1,19 @@
+# Terraform directories and state
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfvars
+*.tfplan
+
+# Compiled Lambda or other archives
+lambda.zip
+
+# Crash logs
+crash.log
+
+# IDE / VS Code settings
+.vscode/
+
+# OS generated files
+.DS_Store
+Thumbs.db
