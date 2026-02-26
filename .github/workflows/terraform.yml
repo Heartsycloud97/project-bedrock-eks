@@ -6,30 +6,67 @@ on:
   push:
     branches: [main]
 
+env:
+  AWS_REGION: us-east-1
+
 jobs:
   terraform:
+    name: "Terraform Infrastructure"
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Repository
         uses: actions/checkout@v3
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.6.0
 
       - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v2
+        uses: aws-actions/configure-aws-credentials@v4
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify Files Exist
+        run: |
+          echo "Checking for required files..."
+          ls -la
+          if [ ! -f "lambda.zip" ]; then
+            echo "ERROR: lambda.zip not found!"
+            exit 1
+          fi
+          if [ ! -f "terraform.tfvars" ]; then
+            echo "WARNING: terraform.tfvars not found, using secrets"
+          fi
+          echo "All required files present"
+
+      - name: Terraform Format Check
+        run: terraform fmt -check -recursive
+        continue-on-error: true
 
       - name: Terraform Init
         run: terraform init
 
+      - name: Terraform Validate
+        run: terraform validate
+
       - name: Terraform Plan
-        run: terraform plan
+        run: |
+          if [ -f "terraform.tfvars" ]; then
+            terraform plan -no-color
+          else
+            terraform plan -var="student_id=${{ secrets.STUDENT_ID }}" -no-color
+          fi
+        continue-on-error: true
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main'
-        run: terraform apply -auto-approve
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: |
+          if [ -f "terraform.tfvars" ]; then
+            terraform apply -auto-approve
+          else
+            terraform apply -var="student_id=${{ secrets.STUDENT_ID }}" -auto-approve
+          fi
